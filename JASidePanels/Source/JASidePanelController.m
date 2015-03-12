@@ -507,6 +507,7 @@ static char ja_kvoContext;
         if (self.state == JASidePanelCenterVisible) {
             if (frame.origin.x > 0.0f) {
                 [self _loadLeftPanel];
+                [self _hideStatusBar];
             } else if(frame.origin.x < 0.0f) {
                 [self _loadRightPanel];
             }
@@ -651,6 +652,20 @@ static char ja_kvoContext;
         return [self _isOnTopLevelViewController:tab.selectedViewController];
     }
     return root != nil;
+}
+
+- (void)_hideStatusBar {
+  dispatch_async(dispatch_get_main_queue(), ^{
+    UIWindow *window = [UIApplication sharedApplication].keyWindow;
+    window.windowLevel = UIWindowLevelStatusBar + 1;
+  });
+}
+
+- (void)_showStatusBar {
+  dispatch_async(dispatch_get_main_queue(), ^{
+    UIWindow *window = [UIApplication sharedApplication].keyWindow;
+    window.windowLevel = UIWindowLevelNormal;
+  });
 }
 
 #pragma mark - Loading Panels
@@ -876,6 +891,7 @@ static char ja_kvoContext;
             self.leftPanelContainer.hidden = YES;
             self.rightPanelContainer.hidden = YES;
             [self _unloadPanels];
+            [self _showStatusBar];
         }];
     } else {
         self.centerPanelContainer.frame = _centerPanelRestingFrame;	
@@ -990,6 +1006,7 @@ static char ja_kvoContext;
         [self _showCenterPanel:YES bounce:NO];
     } else if (self.state == JASidePanelCenterVisible) {
         [self _showLeftPanel:YES bounce:NO];
+        [self _hideStatusBar];
     }
 }
 
