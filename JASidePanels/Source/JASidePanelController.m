@@ -26,6 +26,8 @@
 #import <QuartzCore/QuartzCore.h>
 #import "JASidePanelController.h"
 
+CGFloat const kJATapViewMaxAlpha = 0.5;
+
 static char ja_kvoContext;
 
 @interface JASidePanelController() {
@@ -36,6 +38,7 @@ static char ja_kvoContext;
 @property (nonatomic, readwrite) JASidePanelState state;
 @property (nonatomic, weak) UIViewController *visiblePanel;
 @property (nonatomic, strong) UIView *tapView;
+@property (nonatomic, strong) UIView *dimView;
 
 // panel containers
 @property (nonatomic, strong) UIView *leftPanelContainer;
@@ -134,6 +137,7 @@ static char ja_kvoContext;
     self.style = JASidePanelSingleActive;
     self.leftGapPercentage = 0.8f;
     self.rightGapPercentage = 0.8f;
+    self.leftFixedWidth = 275.0f;
     self.minimumMovePercentage = 0.15f;
     self.maximumAnimationDuration = 0.2f;
     self.bounceDuration = 0.1f;
@@ -176,6 +180,13 @@ static char ja_kvoContext;
     
     [self _swapCenter:nil previousState:0 with:_centerPanel];
     [self.view bringSubviewToFront:self.centerPanelContainer];
+
+    self.dimView = [[UIView alloc] initWithFrame:self.centerPanelContainer.bounds];
+    self.dimView.backgroundColor = [UIColor blackColor];
+    self.dimView.alpha = kJATapViewMaxAlpha;
+    self.dimView.hidden = YES;
+    [self.centerPanelContainer addSubview:self.dimView];
+    [self.centerPanelContainer bringSubviewToFront:self.dimView];
 }
 
 - (void)viewWillAppear:(BOOL)animated {
@@ -491,6 +502,15 @@ static char ja_kvoContext;
         
         if (pan.state == UIGestureRecognizerStateBegan) {
             _locationBeforePan = self.centerPanelContainer.frame.origin;
+          if (self.state == JASidePanelCenterVisible) {
+            [self _hideStatusBar];
+            self.dimView.alpha = 0.0;
+          } else if (self.state == JASidePanelLeftVisible) {
+            self.dimView.alpha = kJATapViewMaxAlpha;
+            self.tapView.hidden = YES;
+          }
+          self.dimView.hidden = NO;
+          [self.centerPanelContainer bringSubviewToFront:self.dimView];
         }
         
         CGPoint translate = [pan translationInView:self.centerPanelContainer];
@@ -502,12 +522,12 @@ static char ja_kvoContext;
         }
         
         self.centerPanelContainer.frame = frame;
-        
+        self.dimView.alpha = kJATapViewMaxAlpha * MIN(frame.origin.x / self.leftFixedWidth, 1.0);
+
         // if center panel has focus, make sure correct side panel is revealed
         if (self.state == JASidePanelCenterVisible) {
             if (frame.origin.x > 0.0f) {
                 [self _loadLeftPanel];
-                [self _hideStatusBar];
             } else if(frame.origin.x < 0.0f) {
                 [self _loadRightPanel];
             }
@@ -522,6 +542,7 @@ static char ja_kvoContext;
             CGFloat deltaX =  frame.origin.x - _locationBeforePan.x;			
             if ([self _validateThreshold:deltaX]) {
                 [self _completePan:deltaX];
+                self.dimView.hidden = YES;
             } else {
                 [self _undoPan];
             }
@@ -581,6 +602,8 @@ static char ja_kvoContext;
             if (self.recognizesPanGesture) {
                 [self _addPanGestureToView:_tapView];
             }
+            _tapView.backgroundColor = [UIColor blackColor];
+            _tapView.alpha = kJATapViewMaxAlpha;
             [self.centerPanelContainer addSubview:_tapView];
         }
     }
