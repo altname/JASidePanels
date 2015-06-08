@@ -574,6 +574,7 @@ static char ja_kvoContext;
 }
 
 - (void)_undoPan {
+    self.dimView.hidden = YES;
     switch (self.state) {
         case JASidePanelCenterVisible: {
             [self _showCenterPanel:YES bounce:NO];
